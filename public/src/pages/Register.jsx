@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import styled from "styled-components";
 import { useNavigate, Link } from "react-router-dom";
-import Logo from "../assets/logo.svg";
+import { Container, Form, Button, Card, Row, Col } from "react-bootstrap";
+import Logo from "../assets/talkative-logo.svg";
+import DummyImage from "../assets/chat_animation.svg"; // left side image
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { registerRoute } from "../utils/APIRoutes";
@@ -11,11 +12,12 @@ export default function Register() {
   const navigate = useNavigate();
   const toastOptions = {
     position: "top-right",
-    autoClose: 8000,
+    autoClose: 5000,
     pauseOnHover: true,
     draggable: true,
-    theme: "dark",
+    theme: "colored",
   };
+
   const [values, setValues] = useState({
     username: "",
     email: "",
@@ -27,7 +29,7 @@ export default function Register() {
     if (localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)) {
       navigate("/");
     }
-  }, []);
+  }, [navigate]);
 
   const handleChange = (event) => {
     setValues({ ...values, [event.target.name]: event.target.value });
@@ -36,28 +38,18 @@ export default function Register() {
   const handleValidation = () => {
     const { password, confirmPassword, username, email } = values;
     if (password !== confirmPassword) {
-      toast.error(
-        "Password and confirm password should be same.",
-        toastOptions
-      );
+      toast.error("Passwords do not match.", toastOptions);
       return false;
     } else if (username.length < 3) {
-      toast.error(
-        "Username should be greater than 3 characters.",
-        toastOptions
-      );
+      toast.error("Username must be at least 3 characters.", toastOptions);
       return false;
     } else if (password.length < 8) {
-      toast.error(
-        "Password should be equal or greater than 8 characters.",
-        toastOptions
-      );
+      toast.error("Password must be at least 8 characters.", toastOptions);
       return false;
     } else if (email === "") {
       toast.error("Email is required.", toastOptions);
       return false;
     }
-
     return true;
   };
 
@@ -85,113 +77,109 @@ export default function Register() {
   };
 
   return (
-    <>
-      <FormContainer>
-        <form action="" onSubmit={(event) => handleSubmit(event)}>
-          <div className="brand">
-            <img src={Logo} alt="logo" />
-            <h1>snappy</h1>
-          </div>
-          <input
-            type="text"
-            placeholder="Username"
-            name="username"
-            onChange={(e) => handleChange(e)}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            name="email"
-            onChange={(e) => handleChange(e)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            name="password"
-            onChange={(e) => handleChange(e)}
-          />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            name="confirmPassword"
-            onChange={(e) => handleChange(e)}
-          />
-          <button type="submit">Create User</button>
-          <span>
-            Already have an account ? <Link to="/login">Login.</Link>
-          </span>
-        </form>
-      </FormContainer>
+    <div className="vh-100 d-flex align-items-center bg-dark">
+      <Container fluid className="px-0">
+        <Row className="g-0 h-100 shadow-lg">
+          {/* Left Side (Image / Animation) */}
+          <Col
+            md={6}
+            className="d-none d-md-flex align-items-center justify-content-center bg-light"
+          >
+            <img
+              src={DummyImage}
+              alt="dummy illustration"
+              className="img-fluid p-4"
+              style={{ maxHeight: "80%", objectFit: "contain" }}
+            />
+          </Col>
+
+          {/* Right Side (Form in Card) */}
+          <Col
+            xs={12}
+            md={6}
+            className="bg-white d-flex align-items-center justify-content-center"
+          >
+            <Card className="w-100 border-0 p-4" style={{ maxWidth: "480px" }}>
+              <div className="text-center mb-3">
+                <img src={Logo} alt="logo" height="50" className="mb-2" />
+                <h2 className="fw-bold text-primary fs-3">Create Account</h2>
+              </div>
+
+              <Form onSubmit={handleSubmit}>
+                <Form.Group className="mb-3" controlId="username">
+                  <Form.Label className="fw-semibold">Username</Form.Label>
+                  <Form.Control
+                    type="text"
+                    placeholder="Enter username"
+                    name="username"
+                    value={values.username}
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="email">
+                  <Form.Label className="fw-semibold">Email</Form.Label>
+                  <Form.Control
+                    type="email"
+                    placeholder="Enter email"
+                    name="email"
+                    value={values.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3" controlId="password">
+                  <Form.Label className="fw-semibold">Password</Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="Enter password"
+                    name="password"
+                    value={values.password}
+                    onChange={handleChange}
+                    required
+                  />
+                  <Form.Text className="text-muted small">
+                    Must be at least 8 characters.
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-4" controlId="confirmPassword">
+                  <Form.Label className="fw-semibold">
+                    Confirm Password
+                  </Form.Label>
+                  <Form.Control
+                    type="password"
+                    placeholder="Confirm password"
+                    name="confirmPassword"
+                    value={values.confirmPassword}
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
+
+                <div className="d-grid mb-3">
+                  <Button type="submit" variant="primary" size="lg">
+                    Create Account
+                  </Button>
+                </div>
+
+                <p className="text-center text-muted small mb-0">
+                  Already have an account?{" "}
+                  <Link
+                    to="/login"
+                    className="fw-semibold text-decoration-none"
+                  >
+                    Login here
+                  </Link>
+                </p>
+              </Form>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
       <ToastContainer />
-    </>
+    </div>
   );
 }
-
-const FormContainer = styled.div`
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1rem;
-  align-items: center;
-  background-color: #131324;
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    justify-content: center;
-    img {
-      height: 5rem;
-    }
-    h1 {
-      color: white;
-      text-transform: uppercase;
-    }
-  }
-
-  form {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    background-color: #00000076;
-    border-radius: 2rem;
-    padding: 3rem 5rem;
-  }
-  input {
-    background-color: transparent;
-    padding: 1rem;
-    border: 0.1rem solid #4e0eff;
-    border-radius: 0.4rem;
-    color: white;
-    width: 100%;
-    font-size: 1rem;
-    &:focus {
-      border: 0.1rem solid #997af0;
-      outline: none;
-    }
-  }
-  button {
-    background-color: #4e0eff;
-    color: white;
-    padding: 1rem 2rem;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 0.4rem;
-    font-size: 1rem;
-    text-transform: uppercase;
-    &:hover {
-      background-color: #4e0eff;
-    }
-  }
-  span {
-    color: white;
-    text-transform: uppercase;
-    a {
-      color: #4e0eff;
-      text-decoration: none;
-      font-weight: bold;
-    }
-  }
-`;

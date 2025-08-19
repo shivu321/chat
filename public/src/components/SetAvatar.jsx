@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import styled from "styled-components";
 import axios from "axios";
 import loader from "../assets/loader.gif";
 import { ToastContainer, toast } from "react-toastify";
@@ -7,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 import { setAvatarRoute } from "../utils/APIRoutes";
 import multiavatar from "@multiavatar/multiavatar/esm";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function SetAvatar() {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export default function SetAvatar() {
 
   const toastOptions = {
     position: "bottom-right",
-    autoClose: 8000,
+    autoClose: 5000,
     pauseOnHover: true,
     draggable: true,
     theme: "dark",
@@ -47,130 +47,76 @@ export default function SetAvatar() {
 
   const setProfilePicture = async () => {
     if (selectedAvatar === undefined) {
-      toast.error("Please select an avatar", toastOptions);
+      toast.error("⚠ Please select an avatar", toastOptions);
       return;
     }
 
-    const user = await JSON.parse(
+    const user = JSON.parse(
       localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
     );
 
-    const { data } = await axios.post(`${setAvatarRoute}/${user._id}`, {
-      image: avatars[selectedAvatar],
-    });
+    try {
+      const { data } = await axios.post(`${setAvatarRoute}/${user._id}`, {
+        image: avatars[selectedAvatar],
+      });
 
-    if (data.isSet) {
-      user.isAvatarImageSet = true;
-      user.avatarImage = data.image;
-      localStorage.setItem(
-        process.env.REACT_APP_LOCALHOST_KEY,
-        JSON.stringify(user)
-      );
-      navigate("/");
-    } else {
-      toast.error("Error setting avatar. Please try again.", toastOptions);
+      if (data.isSet) {
+        user.isAvatarImageSet = true;
+        user.avatarImage = data.image;
+        localStorage.setItem(
+          process.env.REACT_APP_LOCALHOST_KEY,
+          JSON.stringify(user)
+        );
+        navigate("/");
+      } else {
+        toast.error("❌ Error setting avatar. Try again!", toastOptions);
+      }
+    } catch (err) {
+      toast.error("🚨 Something went wrong!", toastOptions);
     }
   };
 
   return (
     <>
       {isLoading ? (
-        <Container>
-          <img src={loader} alt="loader" className="loader" />
-        </Container>
+        <div className="d-flex justify-content-center align-items-center vh-100 bg-dark">
+          <img src={loader} alt="loader" className="img-fluid" style={{ maxWidth: "150px" }} />
+        </div>
       ) : (
-        <Container>
-          <div className="title-container">
-            <h1>Pick an Avatar as your profile picture</h1>
+        <div className="d-flex flex-column justify-content-center align-items-center vh-100 bg-dark p-3">
+          <div className="text-center mb-4">
+            <h1 className="text-white fs-3">
+              Pick an Avatar as your profile picture
+            </h1>
           </div>
-          <div className="avatars">
+          <div className="d-flex flex-wrap justify-content-center gap-3 mb-4">
             {avatars.map((avatar, index) => (
               <div
                 key={index}
-                className={`avatar ${
-                  selectedAvatar === index ? "selected" : ""
+                className={`d-flex justify-content-center align-items-center rounded-circle p-2 bg-secondary ${
+                  selectedAvatar === index ? "border border-4 border-primary shadow" : ""
                 }`}
+                style={{ cursor: "pointer", transition: "0.3s" }}
                 onClick={() => setSelectedAvatar(index)}
               >
                 <img
                   src={`data:image/svg+xml;base64,${avatar}`}
                   alt={`avatar-${index}`}
+                  className="img-fluid rounded-circle"
+                  style={{ width: "5rem", height: "5rem", transition: "0.3s" }}
                 />
               </div>
             ))}
           </div>
-          <button onClick={setProfilePicture} className="submit-btn">
+          <button
+            onClick={setProfilePicture}
+            className="btn btn-primary btn-lg text-uppercase"
+          >
             Set as Profile Picture
           </button>
           <ToastContainer />
-        </Container>
+        </div>
       )}
     </>
   );
 }
-
-const Container = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 3rem;
-  background-color: #131324;
-  height: 100vh;
-  width: 100vw;
-
-  .loader {
-    max-inline-size: 100%;
-  }
-
-  .title-container {
-    h1 {
-      color: white;
-    }
-  }
-
-  .avatars {
-    display: flex;
-    gap: 2rem;
-
-    .avatar {
-      border: 0.4rem solid transparent;
-      padding: 0.4rem;
-      border-radius: 5rem;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      transition: 0.5s ease-in-out;
-
-      img {
-        height: 6rem;
-        transition: 0.5s ease-in-out;
-      }
-
-      &:hover {
-        cursor: pointer;
-        transform: scale(1.1);
-      }
-    }
-
-    .selected {
-      border: 0.4rem solid #4e0eff;
-    }
-  }
-
-  .submit-btn {
-    background-color: #4e0eff;
-    color: white;
-    padding: 1rem 2rem;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 0.4rem;
-    font-size: 1rem;
-    text-transform: uppercase;
-
-    &:hover {
-      background-color: #3c0edc;
-    }
-  }
-`;

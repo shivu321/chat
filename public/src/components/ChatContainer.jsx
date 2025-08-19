@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import styled from "styled-components";
 import ChatInput from "./ChatInput";
 import Logout from "./Logout";
 import { v4 as uuidv4 } from "uuid";
@@ -11,171 +10,85 @@ export default function ChatContainer({ currentChat, socket }) {
   const scrollRef = useRef();
   const [arrivalMessage, setArrivalMessage] = useState(null);
 
-  useEffect(async () => {
-    const data = await JSON.parse(
-      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
-    );
-    const response = await axios.post(recieveMessageRoute, {
-      from: data._id,
-      to: currentChat._id,
-    });
-    setMessages(response.data);
-  }, [currentChat]);
-
+  // Fetch messages
   useEffect(() => {
-    const getCurrentChat = async () => {
-      if (currentChat) {
-        await JSON.parse(
-          localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
-        )._id;
-      }
+    const fetchMessages = async () => {
+      const data = JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
+      const { data: messagesData } = await axios.post(recieveMessageRoute, {
+        from: data._id,
+        to: currentChat._id,
+      });
+      setMessages(messagesData);
     };
-    getCurrentChat();
+    fetchMessages();
   }, [currentChat]);
 
   const handleSendMsg = async (msg) => {
-    const data = await JSON.parse(
-      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
-    );
-    socket.current.emit("send-msg", {
-      to: currentChat._id,
-      from: data._id,
-      msg,
-    });
-    await axios.post(sendMessageRoute, {
-      from: data._id,
-      to: currentChat._id,
-      message: msg,
-    });
-
-    const msgs = [...messages];
-    msgs.push({ fromSelf: true, message: msg });
-    setMessages(msgs);
+    const data = JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
+    socket.current.emit("send-msg", { to: currentChat._id, from: data._id, msg });
+    await axios.post(sendMessageRoute, { from: data._id, to: currentChat._id, message: msg });
+    setMessages((prev) => [...prev, { fromSelf: true, message: msg }]);
   };
 
+  // Receive message
   useEffect(() => {
     if (socket.current) {
-      socket.current.on("msg-recieve", (msg) => {
-        setArrivalMessage({ fromSelf: false, message: msg });
-      });
+      socket.current.on("msg-recieve", (msg) => setArrivalMessage({ fromSelf: false, message: msg }));
     }
   }, []);
 
   useEffect(() => {
-    arrivalMessage && setMessages((prev) => [...prev, arrivalMessage]);
+    if (arrivalMessage) setMessages((prev) => [...prev, arrivalMessage]);
   }, [arrivalMessage]);
 
+  // Auto scroll
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
-    <Container>
-      <div className="chat-header">
-        <div className="user-details">
-          <div className="avatar">
-            <img
-              src={`data:image/svg+xml;base64,${currentChat.avatarImage}`}
-              alt=""
-            />
-          </div>
-          <div className="username">
-            <h3>{currentChat.username}</h3>
-          </div>
+    <div className="d-flex flex-column vh-100">
+      {/* Header */}
+      <div className="d-flex justify-content-between align-items-center p-2 border-bottom bg-primary text-light">
+        <div className="d-flex align-items-center">
+          <img
+            src={`data:image/svg+xml;base64,${currentChat.avatarImage}`}
+            alt="avatar"
+            className="rounded-circle me-2"
+            style={{ width: 50, height: 50, border: "2px solid #fff" }}
+          />
+          <h5 className="mb-0">{currentChat.username}</h5>
         </div>
         <Logout />
       </div>
-      <div className="chat-messages">
-        {messages.map((message) => {
-          return (
-            <div ref={scrollRef} key={uuidv4()}>
-              <div
-                className={`message ${
-                  message.fromSelf ? "sended" : "recieved"
-                }`}
-              >
-                <div className="content ">
-                  <p>{message.message}</p>
-                </div>
-              </div>
+
+      {/* Messages */}
+      <div className="flex-grow-1 overflow-auto p-2 bg-dark">
+        {messages.map((message) => (
+          <div
+            key={uuidv4()}
+            ref={scrollRef}
+            className={`d-flex mb-2 ${message.fromSelf ? "justify-content-end" : "justify-content-start"}`}
+          >
+            <div
+              className="p-2 rounded-3"
+              style={{
+                maxWidth: "65%",
+                backgroundColor: message.fromSelf ? "#4e0eff" : "#fff",
+                color: message.fromSelf ? "#fff" : "#000",
+                wordBreak: "break-word",
+              }}
+            >
+              {message.message}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
-      <ChatInput handleSendMsg={handleSendMsg} />
-    </Container>
+
+      {/* Input */}
+      <div className="p-2 border-top bg-secondary">
+        <ChatInput handleSendMsg={handleSendMsg} />
+      </div>
+    </div>
   );
 }
-
-const Container = styled.div`
-  display: grid;
-  grid-template-rows: 10% 80% 10%;
-  gap: 0.1rem;
-  overflow: hidden;
-  @media screen and (min-width: 720px) and (max-width: 1080px) {
-    grid-template-rows: 15% 70% 15%;
-  }
-  .chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 2rem;
-    .user-details {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      .avatar {
-        img {
-          height: 3rem;
-        }
-      }
-      .username {
-        h3 {
-          color: white;
-        }
-      }
-    }
-  }
-  .chat-messages {
-    padding: 1rem 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    overflow: auto;
-    &::-webkit-scrollbar {
-      width: 0.2rem;
-      &-thumb {
-        background-color: #ffffff39;
-        width: 0.1rem;
-        border-radius: 1rem;
-      }
-    }
-    .message {
-      display: flex;
-      align-items: center;
-      .content {
-        max-width: 40%;
-        overflow-wrap: break-word;
-        padding: 1rem;
-        font-size: 1.1rem;
-        border-radius: 1rem;
-        color: #d1d1d1;
-        @media screen and (min-width: 720px) and (max-width: 1080px) {
-          max-width: 70%;
-        }
-      }
-    }
-    .sended {
-      justify-content: flex-end;
-      .content {
-        background-color: #4f04ff21;
-      }
-    }
-    .recieved {
-      justify-content: flex-start;
-      .content {
-        background-color: #9900ff20;
-      }
-    }
-  }
-`;
