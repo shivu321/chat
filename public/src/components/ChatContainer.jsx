@@ -6,6 +6,7 @@ import axios from "axios";
 import { sendMessageRoute, recieveMessageRoute } from "../utils/APIRoutes";
 
 export default function ChatContainer({ currentChat, socket }) {
+  const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState([]);
   const scrollRef = useRef();
   const [arrivalMessage, setArrivalMessage] = useState(null);
@@ -13,7 +14,9 @@ export default function ChatContainer({ currentChat, socket }) {
   // Fetch messages
   useEffect(() => {
     const fetchMessages = async () => {
-      const data = JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
+      const data = JSON.parse(
+        localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
+      );
       const { data: messagesData } = await axios.post(recieveMessageRoute, {
         from: data._id,
         to: currentChat._id,
@@ -24,16 +27,34 @@ export default function ChatContainer({ currentChat, socket }) {
   }, [currentChat]);
 
   const handleSendMsg = async (msg) => {
-    const data = JSON.parse(localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY));
-    socket.current.emit("send-msg", { to: currentChat._id, from: data._id, msg });
-    await axios.post(sendMessageRoute, { from: data._id, to: currentChat._id, message: msg });
+    const data = JSON.parse(
+      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
+    );
+    socket.current.emit("send-msg", {
+      to: currentChat._id,
+      from: data._id,
+      msg,
+    });
+    await axios.post(sendMessageRoute, {
+      from: data._id,
+      to: currentChat._id,
+      message: msg,
+    });
     setMessages((prev) => [...prev, { fromSelf: true, message: msg }]);
   };
 
   // Receive message
   useEffect(() => {
     if (socket.current) {
-      socket.current.on("msg-recieve", (msg) => setArrivalMessage({ fromSelf: false, message: msg }));
+      socket.current.on("msg-recieve", (msg) =>
+        setArrivalMessage({ fromSelf: false, message: msg })
+      );
+      socket.current.on("typing", () => setIsTyping(true));
+
+      // Hide typing after 2s of no typing
+      const timeout = setTimeout(() => setIsTyping(false), 2000);
+
+      return () => clearTimeout(timeout);
     }
   }, []);
 
@@ -58,6 +79,11 @@ export default function ChatContainer({ currentChat, socket }) {
             style={{ width: 50, height: 50, border: "2px solid #fff" }}
           />
           <h5 className="mb-0">{currentChat.username}</h5>
+          {isTyping && (
+            <div className="text-light small mb-2">
+              {currentChat.username} is typing...
+            </div>
+          )}
         </div>
         <Logout />
       </div>
@@ -68,7 +94,9 @@ export default function ChatContainer({ currentChat, socket }) {
           <div
             key={uuidv4()}
             ref={scrollRef}
-            className={`d-flex mb-2 ${message.fromSelf ? "justify-content-end" : "justify-content-start"}`}
+            className={`d-flex mb-2 ${
+              message.fromSelf ? "justify-content-end" : "justify-content-start"
+            }`}
           >
             <div
               className="p-2 rounded-3"

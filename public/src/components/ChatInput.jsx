@@ -14,6 +14,7 @@ export default function ChatInput({ handleSendMsg }) {
     let message = msg;
     message += emojiObject.emoji;
     setMsg(message);
+    sendTyping();
   };
 
   const sendChat = (e) => {
@@ -22,6 +23,16 @@ export default function ChatInput({ handleSendMsg }) {
       handleSendMsg(msg);
       setMsg("");
     }
+  };
+
+  const sendTyping = () => {
+    const currentUser = JSON.parse(
+      localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)
+    );
+    socket.current.emit("typing", {
+      from: currentUser._id,
+      to: currentChat._id,
+    });
   };
 
   return (
@@ -49,7 +60,10 @@ export default function ChatInput({ handleSendMsg }) {
           className="form-control bg-secondary text-white border-0 rounded-pill me-2"
           placeholder="Type a message..."
           value={msg}
-          onChange={(e) => setMsg(e.target.value)}
+          onChange={(e) => {
+            setMsg(e.target.value);
+            sendTyping();
+          }}
         />
         <button
           className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
