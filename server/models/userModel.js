@@ -19,6 +19,9 @@ const userSchema = new mongoose.Schema({
     required: true,
     min: 8,
   },
+  lastOnline: {
+    type: Date,
+  },
   isAvatarImageSet: {
     type: Boolean,
     default: false,

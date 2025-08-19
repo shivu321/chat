@@ -20,6 +20,7 @@ export default function Chat() {
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
+    console.log("current Chat :" ,currentChat);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 

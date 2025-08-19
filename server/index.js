@@ -33,24 +33,43 @@ app.use("/api/messages", messageRoutes);
 const server = app.listen(process.env.PORT, () =>
   console.log(`Server started on ${process.env.PORT}`)
 );
-const io = socket(server, {
+const io = require("socket.io")(server, {
   cors: {
     origin: "http://localhost:3000",
     credentials: true,
   },
 });
 
+const User = require("./models/userModel.js");
+
 global.onlineUsers = new Map();
+
 io.on("connection", (socket) => {
   global.chatSocket = socket;
+
   socket.on("add-user", (userId) => {
     onlineUsers.set(userId, socket.id);
+    io.emit("update-online-users", Array.from(onlineUsers.keys()));
   });
 
   socket.on("send-msg", (data) => {
     const sendUserSocket = onlineUsers.get(data.to);
     if (sendUserSocket) {
       socket.to(sendUserSocket).emit("msg-recieve", data.msg);
+    }
+  });
+
+  socket.on("disconnect", async () => {
+    // Find userId by socket.id
+    const userId = Array.from(onlineUsers.entries()).find(
+      ([key, value]) => value === socket.id
+    )?.[0];
+
+    if (userId) {
+      // Save lastOnline to DB
+      await User.findByIdAndUpdate(userId, { lastOnline: new Date() });
+      onlineUsers.delete(userId);
+      io.emit("update-online-users", Array.from(onlineUsers.keys()));
     }
   });
 });
